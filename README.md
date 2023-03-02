@@ -12,4 +12,5 @@ File structure of mesh
 │
 
 utils/align_mesh_sdf.py                      # for sdfstudiostudio mesh
+
 utils/align_scale_colmap.py                  # for colmap mesh
