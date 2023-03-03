@@ -14,7 +14,7 @@ mesh_path = os.path.join(os.path.split(root_path)[0], 'meshes')
 gt_meshes = os.path.join(os.path.join(mesh_path, 'gt_mesh'))
 reconstructed_mesh = os.path.join(mesh_path, 'reconstructed_mesh')
 
-DEBUG = (1==1)
+DEBUG = (0==1)
 
 PYMESHLAB_VERSION = "2021.10" # {2021.10, latest}
 
@@ -89,15 +89,27 @@ def main(method):
     print(scaled_meshes)
 
     if DEBUG:
-        scaled_meshes = [
-                '03_sugar_box',
-                #'05_mustard_bottole',
+        volsdf_scaled_meshes = [
+                #'03_sugar_box',
+                #'05_mustard_bottle',
                 #'06_tuna_fish_can',
                 #'08_gelatin_box',
                 #'10_banana',
                 #'19_large_clamp',
                 #'21_foam_brick'
                 ]
+
+        neus_scaled_meshes = [
+                #'03_sugar_box',
+                #'06_tuna_fish_can',
+                #'07_pudding_box',
+                #'08_gelatin_box',
+                #'10_banana',
+                '17_scissors',
+                #'19_large_clamp',
+                ]
+
+        scaled_meshes = neus_scaled_meshes
 
 
     for file in scaled_meshes:
