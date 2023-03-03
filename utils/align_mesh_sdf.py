@@ -8,9 +8,9 @@ import pymeshlab
 from scipy.spatial.transform import Rotation
 
 
-root_path = os.path.split(os.path.split(__file__)[0])[0]
+#root_path = os.path.split(os.path.split(__file__)[0])[0]
+root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
 mesh_path = os.path.join(root_path, 'meshes')
-# root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
 # mesh_path = os.path.join(os.path.split(root_path)[0], 'meshes')
 gt_meshes = os.path.join(os.path.join(mesh_path, 'gt_mesh'))
 reconstructed_mesh = os.path.join(mesh_path, 'reconstructed_mesh')
@@ -19,6 +19,59 @@ parameter_file = os.path.join(root_path,'params')
 DEBUG = (1==1)
 
 PYMESHLAB_VERSION = "2021.10" # {2021.10, latest}
+
+volsdf_scaled_meshes = [
+        #'03_sugar_box',
+        #'05_mustard_bottle',
+        #'06_tuna_fish_can',
+        '07_pudding_box',
+        #'08_gelatin_box',
+        #'10_banana',
+        #'19_large_clamp',
+        #'21_foam_brick'
+        ]
+
+neus_scaled_meshes = [
+        #'03_sugar_box',
+        #'06_tuna_fish_can',
+        #'07_pudding_box',
+        #'08_gelatin_box',
+        #'10_banana',
+        #'17_scissors',
+        #'19_large_clamp',
+        ]
+
+monosdf_scaled_meshes = [
+        '03_sugar_box',
+        '05_mustard_bottle',
+        '06_tuna_fish_can',
+        '07_pudding_box',
+        '10_banana',
+        '17_scissors',
+        '21_foam_brick'
+        ]
+
+ngp_scaled_meshes = [
+        '03_sugar_box',
+        '05_mustard_bottle',
+        '06_tuna_fish_can',
+        '10_banana',
+        '17_scissors',
+        '19_large_clamp'
+        ]
+
+nerfacto_scaled_meshes = [
+        #'03_sugar_box',
+        '05_mustard_bottle',
+        #'06_tuna_fish_can',
+        #'07_pudding_box',
+        #'08_gelatin_box',
+        #'09_large_clamp',
+        #'10_banana',
+        #'17_scissors',
+        #'21_foam_brick'
+        ]
+
 
 def deg2rad(a_deg):
     return np.pi * a_deg / 180.0
@@ -103,48 +156,11 @@ def main(method):
     scaled_meshes = sorted(os.listdir(scaled_mesh_path))
     print(scaled_meshes)
     if DEBUG:
-        volsdf_scaled_meshes = [
-                #'03_sugar_box',
-                #'05_mustard_bottle',
-                #'06_tuna_fish_can',
-                #'08_gelatin_box',
-                #'10_banana',
-                #'19_large_clamp',
-                #'21_foam_brick'
-                ]
-
-        neus_scaled_meshes = [
-                #'03_sugar_box',
-                #'06_tuna_fish_can',
-                #'07_pudding_box',
-                #'08_gelatin_box',
-                #'10_banana',
-                #'17_scissors',
-                #'19_large_clamp',
-                ]
-
-        monosdf_scaled_meshes = [
-                '03_sugar_box',
-                '05_mustard_bottle',
-                '06_tuna_fish_can',
-                '07_pudding_box',
-                '10_banana',
-                '17_scissors',
-                '21_foam_brick'
-                ]
-
-        ngp_scaled_meshes = [
-                '03_sugar_box',
-                '05_mustard_bottle',
-                '06_tuna_fish_can',
-                '10_banana',
-                '17_scissors',
-                '19_large_clamp'
-                ]
 
         #scaled_meshes = neus_scaled_meshes
         #scaled_meshes = monosdf_scaled_meshes
         scaled_meshes = ngp_scaled_meshes
+        scaled_meshes = nerfacto_scaled_meshes
 
 
     for file in scaled_meshes:
@@ -303,7 +319,7 @@ def scale_mesh(method):
             file_path = os.path.join(original_mesh_path, "%s.obj"%file)
         else:
             file_path = os.path.join(original_mesh_path, file, 'mesh.obj')
-        print("Load reconstructed mesh from %s"%file_path)
+        print("\nLoad reconstructed mesh from %s"%file_path)
         ms.load_new_mesh(file_path)
         
         # process it
@@ -358,48 +374,11 @@ def align_mesh(method):
     print(scaled_meshes)
 
     if DEBUG:
-        volsdf_scaled_meshes = [
-                #'03_sugar_box',
-                #'05_mustard_bottle',
-                #'06_tuna_fish_can',
-                #'08_gelatin_box',
-                #'10_banana',
-                #'19_large_clamp',
-                #'21_foam_brick'
-                ]
-
-        neus_scaled_meshes = [
-                #'03_sugar_box',
-                #'06_tuna_fish_can',
-                #'07_pudding_box',
-                #'08_gelatin_box',
-                #'10_banana',
-                #'17_scissors',
-                #'19_large_clamp',
-                ]
-
-        monosdf_scaled_meshes = [
-                '03_sugar_box',
-                '05_mustard_bottle',
-                '06_tuna_fish_can',
-                '07_pudding_box',
-                '10_banana',
-                '17_scissors',
-                '21_foam_brick'
-                ]
-
-        ngp_scaled_meshes = [
-                '03_sugar_box',
-                #'05_mustard_bottle',
-                #'06_tuna_fish_can',
-                #'10_banana',
-                #'17_scissors',
-                #'19_large_clamp'
-                ]
-
         #scaled_meshes = neus_scaled_meshes
         #scaled_meshes = monosdf_scaled_meshes
-        scaled_meshes = ngp_scaled_meshes
+        #scaled_meshes = ngp_scaled_meshes
+        #scaled_meshes = nerfacto_scaled_meshes
+        scaled_meshes = volsdf_scaled_meshes
 
     for file in scaled_meshes:
         #print("processing file : ", file)
@@ -520,9 +499,9 @@ def align_mesh(method):
 
 if __name__=="__main__":
 
-    method = ['neus', 'volsdf', 'monosdf', 'NGP']
+    method = ['neus', 'volsdf', 'monosdf', 'NGP', 'nerfacto']
 
     #main(method[2])
     
-    #scale_mesh(method[2])
-    align_mesh(method[2])
+    #scale_mesh(method[1])
+    align_mesh(method[1])
