@@ -218,7 +218,7 @@ def scale_mesh(method):
         if method == "NGP":
             multiple = 1.7
             crop_box.min_bound = [-1.0 * multiple, -1.0 * multiple, -1.0 * multiple]
-            crop_box.max_bound = [1.0 * multiple, -0.05 * multiple, 1.0 * multiple]
+            crop_box.max_bound = [1.0 * multiple, -0.08 * multiple, 1.0 * multiple]
 
         # crop the reconstructed mesh
         bb_pcd = mesh.crop(crop_box)
@@ -375,5 +375,5 @@ if __name__=="__main__":
 
     #main(method[2])
     
-    scale_mesh(method[1])
-    # align_mesh(method[1])
+    # scale_mesh(method[1])
+    align_mesh(method[1])
