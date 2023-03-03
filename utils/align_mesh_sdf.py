@@ -8,8 +8,8 @@ import pymeshlab
 from scipy.spatial.transform import Rotation
 
 
-#root_path = os.path.split(os.path.split(__file__)[0])[0]
-root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
+root_path = os.path.split(os.path.split(__file__)[0])[0]
+#root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
 mesh_path = os.path.join(root_path, 'meshes')
 # mesh_path = os.path.join(os.path.split(root_path)[0], 'meshes')
 gt_meshes = os.path.join(os.path.join(mesh_path, 'gt_mesh'))
@@ -62,13 +62,13 @@ ngp_scaled_meshes = [
 
 nerfacto_scaled_meshes = [
         #'03_sugar_box',
-        '05_mustard_bottle',
+        #'05_mustard_bottle',
         #'06_tuna_fish_can',
         #'07_pudding_box',
         #'08_gelatin_box',
         #'09_large_clamp',
         #'10_banana',
-        #'17_scissors',
+        '17_scissors',
         #'21_foam_brick'
         ]
 
@@ -377,8 +377,8 @@ def align_mesh(method):
         #scaled_meshes = neus_scaled_meshes
         #scaled_meshes = monosdf_scaled_meshes
         #scaled_meshes = ngp_scaled_meshes
-        #scaled_meshes = nerfacto_scaled_meshes
-        scaled_meshes = volsdf_scaled_meshes
+        scaled_meshes = nerfacto_scaled_meshes
+        #scaled_meshes = volsdf_scaled_meshes
 
     for file in scaled_meshes:
         #print("processing file : ", file)
@@ -504,4 +504,4 @@ if __name__=="__main__":
     #main(method[2])
     
     #scale_mesh(method[1])
-    align_mesh(method[1])
+    align_mesh(method[-1])

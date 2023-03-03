@@ -6,8 +6,8 @@ import pymeshlab
 import json
 
 
-#root_path = os.path.split(os.path.split(__file__)[0])[0]
-root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
+root_path = os.path.split(os.path.split(__file__)[0])[0]
+#root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
 mesh_path = os.path.join(root_path, 'meshes')
 gt_meshes = os.path.join(os.path.join(mesh_path, 'gt_mesh'))
 reconstructed_mesh = os.path.join(mesh_path, 'reconstructed_mesh')
