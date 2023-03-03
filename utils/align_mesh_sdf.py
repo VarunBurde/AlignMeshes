@@ -8,11 +8,13 @@ import pymeshlab
 from scipy.spatial.transform import Rotation
 
 
-#root_path = os.getcwd()
-root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
-mesh_path = os.path.join(os.path.split(root_path)[0], 'meshes')
+root_path = os.path.split(os.path.split(__file__)[0])[0]
+mesh_path = os.path.join(root_path, 'meshes')
+# root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
+# mesh_path = os.path.join(os.path.split(root_path)[0], 'meshes')
 gt_meshes = os.path.join(os.path.join(mesh_path, 'gt_mesh'))
 reconstructed_mesh = os.path.join(mesh_path, 'reconstructed_mesh')
+parameter_file = os.path.join(root_path,'params')
 
 DEBUG = (0==1)
 
@@ -31,7 +33,9 @@ def draw_registration_result(source, target, transformation):
 
 def main(method):
     if not DEBUG:
-        with open("./params/%s_icp.json"%method, "r") as f:
+        method_param_file = os.path.join(parameter_file, "%s_icp.json"%method)
+        print(method_param_file)
+        with open(method_param_file, "r") as f:
             icp_params = json.load(f)
 
     method_mesh_path = os.path.join(reconstructed_mesh, method)
@@ -51,16 +55,16 @@ def main(method):
         if file_name[-4:] == '.ply':
             gt_file_list.append(file_name)
     
-    # scaling 'to real world scale
-    rec_meshes = sorted(os.listdir(original_mesh_path))
-    #for file in rec_meshes:
+    # # scaling 'to real world scale
+    # rec_meshes = sorted(os.listdir(original_mesh_path))
+    # for file in rec_meshes:
     #    # load the raw reconstructed mesh
     #    print("processing file : ", file)
     #    ms = pymeshlab.MeshSet()
     #    scale = int(300 * 0.77)
     #    file_path = os.path.join(original_mesh_path, file, 'mesh.obj')
     #    ms.load_new_mesh(file_path)
-    #    
+    #
     #    # process it
     #    #https://pymeshlab.readthedocs.io/en/2021.10/filter_list.html
     #    if PYMESHLAB_VERSION == "2021.10":
@@ -74,15 +78,15 @@ def main(method):
     #        ms.compute_matrix_from_translation_rotation_scale(scalex=scale, scaley=scale, scalez=scale)
     #    else:
     #        raise ValueError("Unknown PYMESHLAB_VERSION")
-
-
+    #
+    #
     #    # save scaled mesh
     #    scale_mesh_file_dir = os.path.join(scaled_mesh_path, file)
     #    if not os.path.exists(scale_mesh_file_dir):
     #        os.mkdir(scale_mesh_file_dir)
     #    ms.save_current_mesh(os.path.join(scale_mesh_file_dir, 'mesh.ply'), save_face_color=True, save_textures=True)
-
-    #return
+    #
+    # return
     
     # Aligning to ground truth frame
     scaled_meshes = sorted(os.listdir(scaled_mesh_path))
