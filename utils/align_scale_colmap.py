@@ -11,12 +11,12 @@ root_path = os.path.split(os.path.split(__file__)[0])[0]
 mesh_path = os.path.join(root_path, 'meshes')
 gt_meshes = os.path.join(os.path.join(mesh_path, 'gt_mesh'))
 reconstructed_mesh = os.path.join(mesh_path, 'reconstructed_mesh')
-#colmap_mesh_path = os.path.join(reconstructed_mesh, 'colmap')
-#original_mesh_path = os.path.join(colmap_mesh_path, 'original')
-#scaled_mesh_path = os.path.join(colmap_mesh_path, 'scaled_mesh')
-#aligned_mesh_path = os.path.join(colmap_mesh_path, 'aligned_mesh')
-#parameter_file = os.path.join(root_path,'params')
-#colmap_param_file = os.path.join(parameter_file, 'colmap_icp.json')
+colmap_mesh_path = os.path.join(reconstructed_mesh, 'colmap')
+original_mesh_path = os.path.join(colmap_mesh_path, 'original')
+scaled_mesh_path = os.path.join(colmap_mesh_path, 'scaled_mesh')
+aligned_mesh_path = os.path.join(colmap_mesh_path, 'aligned_mesh')
+parameter_file = os.path.join(root_path,'params')
+colmap_param_file = os.path.join(parameter_file, 'colmap_icp.json')
 
 DEBUG = (0==1)
 
@@ -67,7 +67,6 @@ def main():
             crop_box = box.get_axis_aligned_bounding_box()
             crop_box.min_bound = [-300, -300, -300.0]
             crop_box.max_bound = [300, 300, -4.5]
-
             # crop the reconstructed mesh
             bb_pcd = mesh.crop(crop_box)
             bb_pcd.compute_vertex_normals()
@@ -210,13 +209,22 @@ def scale_mesh(method):
         mesh = o3d.io.read_triangle_mesh(file_path)
         box = o3d.geometry.OrientedBoundingBox()
         crop_box = box.get_axis_aligned_bounding_box()
-        crop_box.min_bound = [-300, -300, -300.0]
-        crop_box.max_bound = [300, 300, -4.5]
+
+        if method =="colmap":
+            crop_box.min_bound = [-300, -300, -300.0]
+            crop_box.max_bound = [300, 300, -4.5]
+
+
+        if method == "NGP":
+            multiple = 1.7
+            crop_box.min_bound = [-1.0 * multiple, -1.0 * multiple, -1.0 * multiple]
+            crop_box.max_bound = [1.0 * multiple, -0.05 * multiple, 1.0 * multiple]
 
         # crop the reconstructed mesh
         bb_pcd = mesh.crop(crop_box)
         bb_pcd.compute_vertex_normals()
 
+        # o3d.visualization.draw_geometries([bb_pcd])
         # write the cropped reconstructured mesh
         scale_mesh_file_dir = os.path.join(scaled_mesh_path, file)
         if not os.path.exists(scale_mesh_file_dir):
@@ -224,6 +232,9 @@ def scale_mesh(method):
         output_path = os.path.join(scale_mesh_file_dir, 'mesh.obj')
         #ms.save_current_mesh(output_path, save_face_color=True, save_textures=True)
         #print("Saving scaled mesh to %s"%output_path)
+        if method == "NGP":
+            bb_pcd.scale(300/4, center=(0, 0, 0))
+
 
         #output_path = os.path.join(scaled_mesh_path, file_obj)
         print("Writing cropped mesh to %s"%output_path)
@@ -234,8 +245,8 @@ def scale_mesh(method):
         
 def align_mesh(method):
     print("\nMETHOD: %s"%method)
-
-    with open("./params/%s_icp.json"%method, "r") as f:
+    parameter = os.path.join(parameter_file,"%s_icp.json"%method )
+    with open(parameter, "r") as f:
         icp_params = json.load(f)
 
     method_mesh_path = os.path.join(reconstructed_mesh, method)
@@ -359,11 +370,10 @@ def align_mesh(method):
         o3d.io.write_triangle_mesh(mesh=mesh, filename=aligned_mesh, write_triangle_uvs=True)
         print("Saving aligned mesh to %s"%aligned_mesh)
 
-
 if __name__=="__main__":
     method = ['colmap', 'NGP']
 
     #main(method[2])
     
-    #scale_mesh(method[1])
-    align_mesh(method[1])
+    scale_mesh(method[1])
+    # align_mesh(method[1])
