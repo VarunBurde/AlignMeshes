@@ -84,8 +84,8 @@
         "criteria.relative_fitness": 1e-8,
         "ax": 0.0,
         "ay": 0.0,
-        "az": -100.0,
-        "tx": 0.0,
+        "az": -110.0,
+        "tx": 20.0,
         "ty": 0.0,
         "tz": 0.0,
         "num_points": 5000
