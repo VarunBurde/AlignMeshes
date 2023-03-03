@@ -8,11 +8,13 @@ import pymeshlab
 from scipy.spatial.transform import Rotation
 
 
-#root_path = os.getcwd()
-root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
-mesh_path = os.path.join(os.path.split(root_path)[0], 'meshes')
+root_path = os.path.split(os.path.split(__file__)[0])[0]
+mesh_path = os.path.join(root_path, 'meshes')
+# root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
+# mesh_path = os.path.join(os.path.split(root_path)[0], 'meshes')
 gt_meshes = os.path.join(os.path.join(mesh_path, 'gt_mesh'))
 reconstructed_mesh = os.path.join(mesh_path, 'reconstructed_mesh')
+parameter_file = os.path.join(root_path,'params')
 
 DEBUG = (1==1)
 
@@ -97,7 +99,6 @@ def main(method):
             os.mkdir(scale_mesh_file_dir)
         ms.save_current_mesh(os.path.join(scale_mesh_file_dir, 'mesh.ply'), save_face_color=True, save_textures=True)
 
-    
     # Aligning to ground truth frame
     scaled_meshes = sorted(os.listdir(scaled_mesh_path))
     print(scaled_meshes)

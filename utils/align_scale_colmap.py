@@ -5,15 +5,17 @@ import os
 import pymeshlab
 import json
 
-#root_path = os.getcwd()
-root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
-mesh_path = os.path.join(os.path.split(root_path)[0], 'meshes')
+
+root_path = os.path.split(os.path.split(__file__)[0])[0]
+mesh_path = os.path.join(root_path, 'meshes')
 gt_meshes = os.path.join(os.path.join(mesh_path, 'gt_mesh'))
 reconstructed_mesh = os.path.join(mesh_path, 'reconstructed_mesh')
 colmap_mesh_path = os.path.join(reconstructed_mesh, 'colmap')
 original_mesh_path = os.path.join(colmap_mesh_path, 'original')
 scaled_mesh_path = os.path.join(colmap_mesh_path, 'scaled_mesh')
 aligned_mesh_path = os.path.join(colmap_mesh_path, 'aligned_mesh')
+parameter_file = os.path.join(root_path,'params')
+colmap_param_file = os.path.join(parameter_file, 'colmap_icp.json')
 
 DEBUG = (0==1)
 
@@ -29,9 +31,9 @@ def deg2rad(a_deg):
     return np.pi * a_deg / 180.0
 
 def main():
-    with open("./params/colmap_icp.json", "r") as f:
+    with open(colmap_param_file, "r") as f:
         icp_params = json.load(f)
-    
+
     #print("original_mesh_path: ", original_mesh_path)
     print("\ngt_meshes: ", gt_meshes)
     gt_file_list = []
@@ -41,12 +43,12 @@ def main():
 
     #print("gt_file_list")
     #print(gt_file_list)
-    
+
     # scaling 'to real world scale
     rec_meshes = sorted(os.listdir(original_mesh_path))
     print("\nrec_meshes")
     print(rec_meshes)
-    
+
     if (1==1):
         for file in rec_meshes:
             print("processing file : ", file)
@@ -70,15 +72,15 @@ def main():
             # write the cropped reconstructured mesh
             output_path = os.path.join(scaled_mesh_path, file_obj)
             print("Writing cropped mesh to %s"%output_path)
-            o3d.io.write_triangle_mesh(mesh=bb_pcd, 
+            o3d.io.write_triangle_mesh(mesh=bb_pcd,
                     filename=output_path, write_triangle_uvs=True)
 
-    
+
     # Aligning to ground truth frame
     scaled_meshes = sorted(os.listdir(scaled_mesh_path))
     print("\nscaled_meshes:")
     print(scaled_meshes)
-    
+
     if DEBUG:
         scaled_meshes = [
                 #'03_sugar_box.obj',
@@ -109,7 +111,7 @@ def main():
         gt_mesh = o3d.io.read_triangle_mesh(gt_file_path)
 
         criteria = o3d.pipelines.registration.ICPConvergenceCriteria()
-        
+
         if DEBUG:
             with open("./params.json", "r") as f:
                 data = json.load(f)
@@ -168,7 +170,7 @@ def main():
         print(reg_p2p.transformation)
         draw_registration_result(pcd_mesh, pcd_gt_mesh, reg_p2p.transformation)
         mesh.transform(reg_p2p.transformation)
-    
+
         o3d.io.write_triangle_mesh(mesh=mesh, filename=aligned_mesh, write_triangle_uvs=True)
 
 

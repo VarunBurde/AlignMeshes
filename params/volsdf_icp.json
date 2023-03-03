@@ -38,7 +38,7 @@
         "tz": 0.0,
         "num_points": 5000
     },
-    "08_gelatin_box": {
+    "07_pudding_box": {
         "threshold": 10,
         "criteria.max_iteration" : 3000,
         "criteria.relative_rmse": 1e-8,
