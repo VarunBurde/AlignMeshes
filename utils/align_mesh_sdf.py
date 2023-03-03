@@ -520,7 +520,7 @@ def align_mesh(method):
 
 if __name__=="__main__":
 
-    method = ['neus', 'volsdf', 'monosdf', 'NGP']
+    method = ['neus', 'volsdf', 'monosdf', 'NGP','nerfacto']
 
     #main(method[2])
     
