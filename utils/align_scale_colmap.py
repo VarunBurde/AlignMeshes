@@ -28,6 +28,38 @@ def draw_registration_result(source, target, transformation):
     source_temp.transform(transformation)
     o3d.visualization.draw_geometries([source_temp, target_temp])
 
+def display_inlier_outlier(cloud, ind):
+    inlier_cloud = cloud.select_by_index(ind)
+    outlier_cloud = cloud.select_by_index(ind, invert=True)
+
+    print("Showing outliers (red) and inliers (gray): ")
+    outlier_cloud.paint_uniform_color([1, 0, 0])
+    inlier_cloud.paint_uniform_color([0.8, 0.8, 0.8])
+    o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud],
+                                      zoom=0.3412,
+                                      front=[0.4257, -0.2125, -0.8795],
+                                      lookat=[2.6172, 2.0475, 1.532],
+                                      up=[-0.0694, -0.9768, 0.2024])
+
+
+def filter_noise(bb_pcd):
+    mesh_out = bb_pcd.filter_smooth_simple(number_of_iterations=5)
+    return mesh_out
+
+def remove_floating_part(mesh):
+    with o3d.utility.VerbosityContextManager(
+            o3d.utility.VerbosityLevel.Debug) as cm:
+        triangle_clusters, cluster_n_triangles, cluster_area = (
+            mesh.cluster_connected_triangles())
+    triangle_clusters = np.asarray(triangle_clusters)
+    cluster_n_triangles = np.asarray(cluster_n_triangles)
+    cluster_area = np.asarray(cluster_area)
+    mesh_0 = copy.deepcopy(mesh)
+    triangles_to_remove = cluster_n_triangles[triangle_clusters] < 100
+    mesh_0.remove_triangles_by_mask(triangles_to_remove)
+
+    return mesh_0
+
 
 def deg2rad(a_deg):
     return np.pi * a_deg / 180.0
@@ -200,9 +232,9 @@ def scale_mesh(method):
         # path to raw reconstructed mesh
         #file_path = os.path.join(original_mesh_path, file)
         if method == "NGP":
-            file_path = os.path.join(original_mesh_path, "%s.obj"%file)
+            file_path = os.path.join(original_mesh_path, file)
         else:
-            file_path = os.path.join(original_mesh_path, file, 'mesh.obj')
+            file_path = os.path.join(original_mesh_path, file)
         print("Load reconstructed mesh from %s"%file_path)
 
         # load raw reconstructured mesh
@@ -224,7 +256,14 @@ def scale_mesh(method):
         bb_pcd = mesh.crop(crop_box)
         bb_pcd.compute_vertex_normals()
 
-        # o3d.visualization.draw_geometries([bb_pcd])
+        # filter noise with laplacian
+        bb_pcd = filter_noise(bb_pcd)
+
+        # filter small floating part in space
+        bb_pcd = remove_floating_part(bb_pcd)
+
+        o3d.visualization.draw_geometries([bb_pcd])
+
         # write the cropped reconstructured mesh
         scale_mesh_file_dir = os.path.join(scaled_mesh_path, file)
         if not os.path.exists(scale_mesh_file_dir):
@@ -293,7 +332,7 @@ def align_mesh(method):
         print("processing file : ", file)
 
         # load scaled mesh
-        file_path = os.path.join(scaled_mesh_path, file, "mesh.obj")
+        file_path = os.path.join(scaled_mesh_path, file)
         mesh = o3d.io.read_triangle_mesh(file_path)
         print("load scaled mesh: %s"%file_path)
 
@@ -375,5 +414,5 @@ if __name__=="__main__":
 
     #main(method[2])
     
-    # scale_mesh(method[1])
-    align_mesh(method[1])
+    # scale_mesh(method[0])
+    align_mesh(method[0])
