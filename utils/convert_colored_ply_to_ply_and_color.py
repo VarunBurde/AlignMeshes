@@ -26,36 +26,18 @@ def main():
     print(rec_meshes)
     for file in rec_meshes:
         print("processing file : ", file)
+        output_object_dir = os.path.join(texture_mesh, file)
+        if not os.path.exists(output_object_dir):
+            os.mkdir(output_object_dir)
+
         ms = pymeshlab.MeshSet()
-        input_file_path = os.path.join(aligned_mesh_path, file)
+        input_file_path = os.path.join(aligned_mesh_path, file, 'mesh.ply')
         ms.load_new_mesh(input_file_path)
 
-        # ms.generate_surface_reconstruction_screened_poisson(depth = 10)
-        # ms.generate_surface_reconstruction_vcg()
-        # ms.generate_surface_reconstruction_ball_pivoting()
-        ms.meshing_repair_non_manifold_edges()
-        ms.meshing_close_holes()
-        ms.remove_zero_area_faces()
+        ms.compute_texcoord_parametrization_triangle_trivial_per_wedge(textdim=8048)
+        ms.compute_texmap_from_color(textname="material_0.png",texth= 2048, textw= 2048)
+        ms.save_current_mesh(os.path.join(output_object_dir, 'mesh.ply'), save_face_color=True, save_textures=True)
 
-        try:
-            ms.compute_texcoord_parametrization_triangle_trivial_per_wedge(textdim= 2000)
-            # ms.compute_texcoord_by_function_per_wedge()
-            # ms.compute_texcoord_by_function_per_vertex()
-            # ms.compute_texcoord_parametrization_harmonic()
-            # ms.compute_texcoord_transfer_vertex_to_wedge()
-            # ms.compute_texcoord_transfer_wedge_to_vertex()
-            # ms.compute_texcoord_parametrization_and_texture_from_registered_rasters()
-            # ms.compute_texcoord_parametrization_from_registered_rasters()
-
-
-            output_object_dir = os.path.join(texture_mesh, file[:-4])
-            if not os.path.exists(output_object_dir):
-                os.mkdir(output_object_dir)
-
-            ms.compute_texmap_from_color(textname=f"material_0.png")
-            ms.save_current_mesh(os.path.join(output_object_dir, 'mesh.ply'), save_face_color=True, save_textures=True)
-        except:
-            pass
 
 if __name__ == '__main__':
     main()

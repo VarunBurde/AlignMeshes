@@ -58,7 +58,7 @@ def remove_small_floating_part(mesh):
     mesh_0 = copy.deepcopy(mesh)
     triangles_to_remove = cluster_n_triangles[triangle_clusters] < 100
     mesh_0.remove_triangles_by_mask(triangles_to_remove)
-    o3d.visualization.draw_geometries([mesh_0])
+    mesh_0 = remove_floating_part(mesh_0)
     return mesh_0
 
 def remove_floating_part(mesh):
@@ -73,10 +73,7 @@ def remove_floating_part(mesh):
     largest_cluster_idx = cluster_n_triangles.argmax()
     triangles_to_remove = triangle_clusters != largest_cluster_idx
     mesh_1.remove_triangles_by_mask(triangles_to_remove)
-    mesh_1 = remove_small_floating_part(mesh_1)
     return mesh_1
-
-
 
 
 def deg2rad(a_deg):
@@ -94,7 +91,8 @@ def scale_mesh(method):
         rec_meshes = [l.split(".")[0] for l in sorted(os.listdir(original_mesh_path))
                 if l.split(".")[1] == "obj"]
     else:
-        rec_meshes = sorted(os.listdir(original_mesh_path))
+        rec_meshes = [l.split(".")[0] for l in sorted(os.listdir(original_mesh_path))
+                if l.split(".")[1] == "ply"]
     print("\nrec_meshes")
     print(rec_meshes)
 
@@ -105,9 +103,9 @@ def scale_mesh(method):
         # file_path = os.path.join(original_mesh_path, file)
 
         if method == "NGP":
-            file_path = os.path.join(original_mesh_path, file)
+            file_path = os.path.join(original_mesh_path, file +'.obj')
         else:
-            file_path = os.path.join(original_mesh_path, file)
+            file_path = os.path.join(original_mesh_path, file +'.ply')
         print("Load reconstructed mesh from %s"%file_path)
 
         # load raw reconstructured mesh
@@ -117,26 +115,26 @@ def scale_mesh(method):
 
         if method =="colmap":
             crop_box.min_bound = [-300, -300, -300.0]
-            crop_box.max_bound = [300, 300, -4.5]
+            crop_box.max_bound = [300, 300, -4]
 
 
         if method == "NGP":
-            multiple = 1.7
+            multiple = 2
             crop_box.min_bound = [-1.0 * multiple, -1.0 * multiple, -1.0 * multiple]
-            crop_box.max_bound = [1.0 * multiple, -0.08 * multiple, 1.0 * multiple]
+            crop_box.max_bound = [1.0 * multiple, -0.01 * multiple, 1.0 * multiple]
 
         # crop the reconstructed mesh
         bb_pcd = mesh.crop(crop_box)
 
 
         # filter small floating part in space
-        bb_pcd = remove_floating_part(bb_pcd)
+        bb_pcd = remove_small_floating_part(bb_pcd)
 
         # o3d.visualization.draw_geometries([bb_pcd])
 
 
         # write the cropped reconstructured mesh
-        scale_mesh_file_dir = os.path.join(scaled_mesh_path, file[:-4])
+        scale_mesh_file_dir = os.path.join(scaled_mesh_path, file)
         if not os.path.exists(scale_mesh_file_dir):
             os.makedirs(scale_mesh_file_dir)
 
@@ -147,7 +145,6 @@ def scale_mesh(method):
             bb_pcd.scale(300/4, center=(0, 0, 0))
 
         bb_pcd.compute_vertex_normals()
-
         #output_path = os.path.join(scaled_mesh_path, file_obj)
         print("Writing cropped mesh to %s"%output_path)
         o3d.io.write_triangle_mesh(mesh=bb_pcd,
@@ -286,10 +283,43 @@ def align_mesh(method):
         o3d.io.write_triangle_mesh(mesh=mesh, filename=aligned_mesh, write_triangle_uvs=True)
         print("Saving aligned mesh to %s"%aligned_mesh)
 
+def generate_uvmap(method):
+    method_mesh_path = os.path.join(reconstructed_mesh, method)
+    aligned_mesh_path = os.path.join(method_mesh_path, 'aligned_mesh')
+    texture_mesh_path = os.path.join(method_mesh_path, 'texture_mesh')
+    print("Saving meshes to %s" % texture_mesh_path)
+
+    # Aligning to ground truth frame
+    aligned_mesh = sorted(os.listdir(aligned_mesh_path))
+    print("\nscaled_meshes to process:")
+    print(aligned_mesh)
+    for file in aligned_mesh:
+        print("processing file : ", file)
+
+        aligned_mesh_dir = os.path.join(aligned_mesh_path, file)
+
+        if not os.path.exists(texture_mesh_path):
+            os.mkdir(texture_mesh_path)
+
+        # load scaled mesh
+        file_path = os.path.join(aligned_mesh_path, file, 'mesh.ply')
+        mesh = o3d.t.geometry.TriangleMesh.from_legacy(o3d.io.read_triangle_mesh(file_path))
+        print("load scaled mesh: %s"%file_path)
+        mesh.compute_uvatlas()
+        mesh.material.material_name = 'material_0.png'
+
+        # prepare output filepath
+        textured_mesh = os.path.join(texture_mesh_path, file, 'mesh.ply')
+        o3d.io.write_triangle_mesh(mesh=mesh, filename=textured_mesh, write_triangle_uvs=True)
+        print("Saving aligned mesh to %s"%textured_mesh)
+
 
 if __name__=="__main__":
     method = ['colmap', 'NGP']
     #main(method[2])
 
     # scale_mesh(method[0])
-    align_mesh(method[0])
+    # align_mesh(method[0])
+
+    # dont use this
+    # generate_uvmap(method[0])
