@@ -12,6 +12,19 @@
         "tz": 0.0,
         "num_points": 5000
     },
+    "05_mustard_bottle": {
+        "threshold": 10,
+        "criteria.max_iteration": 3000,
+        "criteria.relative_rmse": 1e-8,
+        "criteria.relative_fitness": 1e-8,
+        "ax": 0.0,
+        "ay": 90.0,
+        "az": 0.0,
+        "tx": 0.0,
+        "ty": 0.0,
+        "tz": 0.0,
+        "num_points": 5000
+    },
     "06_tuna_fish_can":{
         "threshold": 10,
         "criteria.max_iteration" : 3000,

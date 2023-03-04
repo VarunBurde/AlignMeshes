@@ -4,7 +4,7 @@ import numpy as np
 import os
 import pymeshlab
 import json
-
+import matplotlib.pyplot as plt
 
 root_path = os.path.split(os.path.split(__file__)[0])[0]
 #root_path = "/home/abenbihi/ws/tf/sdfstudio/outputs/shared_data/Clean_meshes/"
@@ -58,7 +58,9 @@ def remove_small_floating_part(mesh):
     mesh_0 = copy.deepcopy(mesh)
     triangles_to_remove = cluster_n_triangles[triangle_clusters] < 100
     mesh_0.remove_triangles_by_mask(triangles_to_remove)
+    o3d.visualization.draw_geometries([mesh_0])
     mesh_0 = remove_floating_part(mesh_0)
+    o3d.visualization.draw_geometries([mesh_0])
     return mesh_0
 
 def remove_floating_part(mesh):
@@ -74,6 +76,74 @@ def remove_floating_part(mesh):
     triangles_to_remove = triangle_clusters != largest_cluster_idx
     mesh_1.remove_triangles_by_mask(triangles_to_remove)
     return mesh_1
+
+def remove_outlier_with_estimated_bbox_gt(mesh, gt_mesh, method):
+    if method == "colmap":
+        aabb = gt_mesh.get_oriented_bounding_box()
+        aabb.scale(1.05, aabb.get_center())
+        mesh = mesh.crop(aabb)
+        o3d.visualization.draw_geometries([mesh])
+        return mesh
+    else:
+        aabb = gt_mesh.get_oriented_bounding_box()
+        aabb.scale(1.1, aabb.get_center())
+        mesh = mesh.crop(aabb)
+        o3d.visualization.draw_geometries([mesh])
+        return mesh
+
+
+def noise_removal_segmenting_plane(bb_pcd):
+    ## convert to pcd
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = bb_pcd.vertices
+    pcd.colors = bb_pcd.vertex_colors
+    pcd.normals = bb_pcd.vertex_normals
+
+    ## plane segmentation
+    plane_model, inliers = pcd.segment_plane(distance_threshold=1,
+                                            ransac_n=3,
+                                            num_iterations=1000)
+    [a, b, c, d] = plane_model
+    print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
+
+    inlier_cloud = pcd.select_by_index(inliers)
+    inlier_cloud.paint_uniform_color([1.0, 0, 0])
+    outlier_cloud = pcd.select_by_index(inliers, invert=True)
+    o3d.visualization.draw_geometries([outlier_cloud, inlier_cloud])
+
+    outlier_cloud.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+    with o3d.utility.VerbosityContextManager(
+            o3d.utility.VerbosityLevel.Debug) as cm:
+        mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(
+            outlier_cloud, depth=9)
+    return mesh
+
+
+def remove_noise_with_radius(pcd):
+    voxel_down_pcd = pcd.voxel_down_sample(voxel_size=0.02)
+    print("Statistical oulier removal")
+    pcd, ind = voxel_down_pcd.remove_statistical_outlier(nb_neighbors=20,
+                                                        std_ratio=2.0)
+    display_inlier_outlier(pcd, ind)
+
+    # print("Radius oulier removal")
+    # pcd, ind = pcd.remove_radius_outlier(nb_points=16, radius=0.05)
+    # display_inlier_outlier(pcd, ind)
+    #
+    # # db clustering
+    # with o3d.utility.VerbosityContextManager(
+    #         o3d.utility.VerbosityLevel.Debug) as cm:
+    #     labels = np.array(
+    #         pcd.cluster_dbscan(eps=20, min_points=20, print_progress=True))
+    # max_label = labels.max()
+    #
+    # print(f"point cloud has {max_label + 1} clusters")
+    # colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
+    # colors[labels < 0] = 0
+    # pcd.colors = o3d.utility.Vector3dVector(colors[:, :3])
+    # o3d.visualization.draw_geometries([pcd])
+
+    return pcd
 
 
 def deg2rad(a_deg):
@@ -111,24 +181,30 @@ def scale_mesh(method):
         # load raw reconstructured mesh
         mesh = o3d.io.read_triangle_mesh(file_path)
         box = o3d.geometry.OrientedBoundingBox()
+        box2 = o3d.geometry.OrientedBoundingBox()
         crop_box = box.get_axis_aligned_bounding_box()
+        crop_box2 = box2.get_axis_aligned_bounding_box()
 
         if method =="colmap":
             crop_box.min_bound = [-300, -300, -300.0]
             crop_box.max_bound = [300, 300, -4]
 
+            crop_box2.min_bound = [-300, -300, -300.0]
+            crop_box2.max_bound = [300, 300, -2.5]
+
 
         if method == "NGP":
             multiple = 2
             crop_box.min_bound = [-1.0 * multiple, -1.0 * multiple, -1.0 * multiple]
-            crop_box.max_bound = [1.0 * multiple, -0.01 * multiple, 1.0 * multiple]
+            crop_box.max_bound = [1.0 * multiple, -0.1 * multiple, 1.0 * multiple]
+
+            crop_box2.min_bound = [-1.0 * multiple, -1.0 * multiple, -1.0 * multiple]
+            crop_box2.max_bound = [1.0 * multiple, 0 * multiple, 1.0 * multiple]
+
 
         # crop the reconstructed mesh
         bb_pcd = mesh.crop(crop_box)
-
-
-        # filter small floating part in space
-        bb_pcd = remove_small_floating_part(bb_pcd)
+        bb_pcd2 = mesh.crop(crop_box2)
 
         # o3d.visualization.draw_geometries([bb_pcd])
 
@@ -139,16 +215,21 @@ def scale_mesh(method):
             os.makedirs(scale_mesh_file_dir)
 
         output_path = os.path.join(scale_mesh_file_dir, "mesh.ply")
+        output_path2 = os.path.join(scale_mesh_file_dir, "mesh2.ply")
         #ms.save_current_mesh(output_path, save_face_color=True, save_textures=True)
         #print("Saving scaled mesh to %s"%output_path)
         if method == "NGP":
             bb_pcd.scale(300/4, center=(0, 0, 0))
+            bb_pcd2.scale(300 / 4, center=(0, 0, 0))
 
         bb_pcd.compute_vertex_normals()
         #output_path = os.path.join(scaled_mesh_path, file_obj)
         print("Writing cropped mesh to %s"%output_path)
         o3d.io.write_triangle_mesh(mesh=bb_pcd,
                 filename=output_path, write_triangle_uvs=True)
+
+        o3d.io.write_triangle_mesh(mesh=bb_pcd2,
+                filename=output_path2, write_triangle_uvs=True)
 
         
 def align_mesh(method):
@@ -210,6 +291,10 @@ def align_mesh(method):
         mesh = o3d.io.read_triangle_mesh(file_path)
         print("load scaled mesh: %s"%file_path)
 
+        # load scaled mesh2
+        file_path2 = os.path.join(scaled_mesh_path, file, 'mesh2.ply')
+        mesh2 = o3d.io.read_triangle_mesh(file_path2)
+
         # prepare output filepath
         aligned_mesh = os.path.join(aligned_mesh_path, file, 'mesh.ply')
 
@@ -218,6 +303,7 @@ def align_mesh(method):
         gt_file_path = "%s/obj_%06d.ply"%(gt_meshes, mesh_id)
         print("gt_file_path: ", gt_file_path)
         gt_mesh = o3d.io.read_triangle_mesh(gt_file_path)
+
 
         criteria = o3d.pipelines.registration.ICPConvergenceCriteria()
 
@@ -279,8 +365,13 @@ def align_mesh(method):
         print(reg_p2p.transformation)
         draw_registration_result(pcd_mesh, pcd_gt_mesh, reg_p2p.transformation)
         mesh.transform(reg_p2p.transformation)
+        mesh2.transform(reg_p2p.transformation)
 
-        o3d.io.write_triangle_mesh(mesh=mesh, filename=aligned_mesh, write_triangle_uvs=True)
+        # mesh2 = noise_removal_segmenting_plane(mesh2)
+        mesh2 = remove_outlier_with_estimated_bbox_gt(mesh2, gt_mesh, method)
+        mesh2 = remove_small_floating_part(mesh2)
+
+        o3d.io.write_triangle_mesh(mesh=mesh2, filename=aligned_mesh, write_triangle_uvs=True)
         print("Saving aligned mesh to %s"%aligned_mesh)
 
 def generate_uvmap(method):
@@ -318,8 +409,8 @@ if __name__=="__main__":
     method = ['colmap', 'NGP']
     #main(method[2])
 
-    # scale_mesh(method[0])
-    # align_mesh(method[0])
+    scale_mesh(method[1])
+    align_mesh(method[1])
 
     # dont use this
     # generate_uvmap(method[0])

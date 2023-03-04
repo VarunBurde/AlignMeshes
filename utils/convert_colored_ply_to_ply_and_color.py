@@ -5,7 +5,7 @@ import os
 import pymeshlab
 import json
 
-method = 'NGP'
+method = 'colmap'
 
 root_path = os.path.split(os.path.split(__file__)[0])[0]
 mesh_path = os.path.join(root_path, 'meshes')
