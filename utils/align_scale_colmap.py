@@ -374,6 +374,14 @@ def align_mesh(method):
         o3d.io.write_triangle_mesh(mesh=mesh2, filename=aligned_mesh, write_triangle_uvs=True)
         print("Saving aligned mesh to %s"%aligned_mesh)
 
+        # pcd.points = bb_pcd.vertices
+        # pcd.colors = bb_pcd.vertex_colors
+        # pcd.normals = bb_pcd.vertex_normals
+        # ms = pymeshlab.MeshSet()
+        # ms.current_mesh(mesh2)
+        # ms.current_mesh().face_matrix = mesh2.triangles
+
+
 def generate_uvmap(method):
     method_mesh_path = os.path.join(reconstructed_mesh, method)
     aligned_mesh_path = os.path.join(method_mesh_path, 'aligned_mesh')
@@ -409,8 +417,8 @@ if __name__=="__main__":
     method = ['colmap', 'NGP']
     #main(method[2])
 
-    scale_mesh(method[1])
-    align_mesh(method[1])
+    scale_mesh(method[0])
+    align_mesh(method[0])
 
     # dont use this
     # generate_uvmap(method[0])

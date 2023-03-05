@@ -1,11 +1,12 @@
 import copy
 import json
 import os
-
+import trimesh
 import numpy as np
 import open3d as o3d
 import pymeshlab
 from scipy.spatial.transform import Rotation
+import cv2
 
 
 root_path = os.path.split(os.path.split(__file__)[0])[0]
@@ -143,6 +144,7 @@ def scale_mesh(method):
     print("Saving meshes to %s"%scaled_mesh_path)
 
 
+
     rec_meshes = sorted(os.listdir(original_mesh_path))
     print("\nrec_meshes:")
     print(rec_meshes)
@@ -156,23 +158,37 @@ def scale_mesh(method):
             file_path = os.path.join(original_mesh_path, file, 'poisson_mesh.ply')
         else:
             file_path = os.path.join(original_mesh_path, file, 'mesh.obj')
+            img_file = os.path.join(original_mesh_path, file, 'material_0.png')
+            img = cv2.imread(img_file)
+            mesh = o3d.io.read_triangle_mesh(file_path)
+            mesh.textures = [o3d.geometry.Image(img)]
+            o3d.visualization.draw_geometries([mesh])
+
+
+
         print("\nLoad reconstructed mesh from %s"%file_path)
         ms.load_new_mesh(file_path)
 
-        # per = pymeshlab.Percentage(27)
-        # ms.meshing_remove_connected_component_by_diameter(mincomponentdiag= per)
-        # ms.meshing_remove_connected_component_by_face_number(mincomponentsize=1500)
+        ms.meshing_remove_connected_component_by_face_number(mincomponentsize=50)
+        per = pymeshlab.Percentage(27)
+        ms.meshing_remove_connected_component_by_diameter(mincomponentdiag= per)
+        ms.meshing_remove_folded_faces()
+        ms.meshing_remove_null_faces()
+        ms.meshing_cut_along_crease_edges()
+        # print(ms.compute_selection_by_condition_per_face())
 
 
         # process it
         #https://pymeshlab.readthedocs.io/en/2021.10/filter_list.html
         if PYMESHLAB_VERSION == "2021.10":
             ms.repair_non_manifold_edges()
-            ms.close_holes()
+            ms.meshing_repair_non_manifold_vertices()
+            ms.meshing_close_holes()
             ms.matrix_set_from_translation_rotation_scale(scalex=scale, scaley=scale, scalez=scale)
         # https://pymeshlab.readthedocs.io/en/latest/filter_list.html
         elif PYMESHLAB_VERSION == "latest":
             ms.meshing_repair_non_manifold_edges()
+            ms.meshing_repair_non_manifold_vertices()
             ms.meshing_close_holes()
             ms.compute_matrix_from_translation_rotation_scale(scalex=scale, scaley=scale, scalez=scale)
         else:
@@ -182,9 +198,15 @@ def scale_mesh(method):
         scale_mesh_file_dir = os.path.join(scaled_mesh_path, file)
         if not os.path.exists(scale_mesh_file_dir):
             os.mkdir(scale_mesh_file_dir)
-        output_path = os.path.join(scale_mesh_file_dir, 'mesh.ply')
-        ms.save_current_mesh(output_path, save_face_color=True, save_textures=True)
+        output_path = os.path.join(scale_mesh_file_dir, 'mesh.obj')
+        output_path2 = os.path.join(scale_mesh_file_dir, 'mesh2.obj')
+        # ms.save_current_mesh(output_path, save_face_color=True, save_textures=True)
         print("Saving scaled mesh to %s"%output_path)
+        o3d.io.write_triangle_mesh(mesh=mesh, filename=output_path2,
+                                   write_triangle_uvs=True, write_vertex_normals=True,
+                                   write_vertex_colors= True)
+
+
 
 
 def align_mesh(method):
@@ -225,8 +247,11 @@ def align_mesh(method):
     for file in scaled_meshes:
         #print("processing file : ", file)
         # load scaled mesh
-        file_path = os.path.join(scaled_mesh_path, file, 'mesh.ply')
-        mesh = o3d.io.read_triangle_mesh(file_path)
+        file_path = os.path.join(scaled_mesh_path, file, 'mesh.obj')
+        img =  os.path.join(scaled_mesh_path, file, 'material_0.png')
+        mesh = o3d.io.read_triangle_mesh(file_path,True)
+        mesh.textures = [o3d.geometry.Image(img)]
+
         print("load scaled mesh: %s"%file_path)
 
         # prepare output filepath
@@ -336,10 +361,27 @@ def align_mesh(method):
         align_mesh_file_dir = os.path.join(aligned_mesh_path, file)
         if not os.path.exists(align_mesh_file_dir):
             os.mkdir(align_mesh_file_dir)
-        output_path = os.path.join(align_mesh_file_dir, 'mesh.ply')
+        output_path = os.path.join(align_mesh_file_dir, 'mesh.obj')
         output_path2 = os.path.join(align_mesh_file_dir, 'mesh2.obj')
         texture_path = os.path.join(align_mesh_file_dir, 'material_0.png')
         ms.save_current_mesh(output_path, save_face_color=True, save_textures=True)
+
+
+
+        # mesh2 = o3d.io.read_triangle_mesh(output_path)
+        # o3d.io.write_triangle_mesh(mesh=mesh2, filename=output_path2,
+        #                            write_triangle_uvs=True, write_vertex_normals=True,
+        #                            write_vertex_colors= True)
+
+        # trim = trimesh.load(output_path)
+        # trimgt = trimesh.load(gt_file_path)
+        #
+        # box = trimesh.creation.box(extents= trimgt.bounding_box.extents)
+        # trim.export(output_path2)
+        # box.apply_scale(1.1)
+        # trim = trim.slice_plane(box.facets_origin, -box.facets_normal)
+        # trim.export(output_path2)
+
 
         # mesh = o3d.t.geometry.TriangleMesh.from_legacy(o3d.io.read_triangle_mesh(output_path))
         # # mesh = mesh.compute_convex_hull()
@@ -374,5 +416,5 @@ if __name__=="__main__":
 
     #main(method[2])
     
-    # scale_mesh(method[3])
-    align_mesh(method[3])
+    scale_mesh(method[0])
+    # align_mesh(method[0])
